@@ -3,17 +3,41 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'category_id',
         'sku',
         'name',
-        'price',
         'stock',
-        'min_stock'
+        'low_stock_threshold',
+        'price',
+        'cost',
+        'image',
+        'is_active',
     ];
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'cost' => 'decimal:2',
+        'is_active' => 'boolean',
+    ];
+
+    protected static function booted()
+    {
+        static::creating(function ($product) {
+            if (empty($product->sku)) {
+                $lastId = self::max('id') + 1;
+                $product->sku = 'PRD-' . str_pad($lastId, 6, '0', STR_PAD_LEFT);
+            }
+        });
+    }
+
 
     public function category()
     {
@@ -28,5 +52,10 @@ class Product extends Model
     public function stockLogs()
     {
         return $this->hasMany(StockLog::class);
+    }
+
+    public function isLowStock(): bool
+    {
+        return $this->stock <= $this->low_stock_threshold;
     }
 }
