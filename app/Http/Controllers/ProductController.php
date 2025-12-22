@@ -15,29 +15,31 @@ class ProductController extends Controller
         $query = Product::with('category');
 
         // 🔍 Search
-        if ($request->search) {
-            $query->where('name', 'like', "%{$request->search}%")
-                ->orWhere('sku', 'like', "%{$request->search}%");
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->search}%")
+                    ->orWhere('sku', 'like', "%{$request->search}%");
+            });
         }
 
         // 📂 Filter category
-        if ($request->category_id) {
+        if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        // 🚨 Low stock only
-        if ($request->low_stock) {
+        // 🚨 Low stock (query param)
+        if ($request->boolean('low_stock')) {
             $query->whereColumn('stock', '<=', 'low_stock_threshold');
         }
 
-        $products = $query->latest()->paginate(10);
-
-        return ProductResource::collection($products);
+        return ProductResource::collection(
+            $query->latest()->paginate(10)
+        );
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:150',
             'price' => 'required|numeric|min:0',
@@ -46,21 +48,13 @@ class ProductController extends Controller
             'low_stock_threshold' => 'required|integer|min:0',
         ]);
 
-        $category = Category::findOrFail($request->category_id);
+        $category = Category::findOrFail($validated['category_id']);
 
-        $sku = $this->generateSku($category);
+        $validated['sku'] = $this->generateSku($category);
 
-        $product = Product::create([
-            'category_id' => $category->id,
-            'sku' => $sku,
-            'name' => $request->name,
-            'price' => $request->price,
-            'cost' => $request->cost,
-            'stock' => $request->stock,
-            'low_stock_threshold' => $request->low_stock_threshold,
-        ]);
+        $product = Product::create($validated);
 
-        return new ProductResource($product);
+        return new ProductResource($product->load('category'));
     }
 
     public function show(Product $product)
@@ -70,7 +64,7 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:150',
             'price' => 'required|numeric|min:0',
             'cost' => 'required|numeric|min:0',
@@ -78,17 +72,32 @@ class ProductController extends Controller
             'low_stock_threshold' => 'required|integer|min:0',
         ]);
 
-        $product->update($request->all());
+        $product->update($validated);
 
-        return new ProductResource($product);
+        return new ProductResource($product->load('category'));
     }
 
     public function destroy(Product $product)
     {
-        $product->delete();
+        $product->delete(); // soft delete
 
         return response()->json([
-            'message' => 'Product soft deleted'
+            'message' => 'Product deleted successfully'
+        ]);
+    }
+
+    /* ===========================
+       🚨 LOW STOCK ENDPOINT
+    =========================== */
+    public function lowStock()
+    {
+        $products = Product::whereColumn('stock', '<=', 'low_stock_threshold')
+            ->orderBy('stock', 'asc')
+            ->get();
+
+        return response()->json([
+            'total' => $products->count(),
+            'data'  => ProductResource::collection($products),
         ]);
     }
 
@@ -98,7 +107,9 @@ class ProductController extends Controller
     private function generateSku(Category $category): string
     {
         $prefix = strtoupper(Str::substr($category->name, 0, 3));
-        $count = Product::where('category_id', $category->id)->withTrashed()->count() + 1;
+        $count  = Product::where('category_id', $category->id)
+            ->withTrashed()
+            ->count() + 1;
 
         return $prefix . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
     }

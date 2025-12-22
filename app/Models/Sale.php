@@ -6,7 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sale extends Model
 {
-    protected $fillable = ['user_id', 'total_amount'];
+    protected $fillable = [
+        'user_id',
+        'total_amount',
+        'profit',
+        'invoice_number',
+        'sale_date',
+        'payment_method',
+        'total_cost',
+    ];
 
     public function cashier()
     {

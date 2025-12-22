@@ -10,13 +10,13 @@ return new class extends Migration
     {
         Schema::create('sale_items', function (Blueprint $table) {
             $table->id();
-
             $table->foreignId('sale_id')->constrained('sales')->onDelete('cascade');
             $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-
             $table->integer('quantity');
-            $table->decimal('price', 10, 2); // harga saat transaksi
-
+            $table->decimal('price', 15, 2); // harga jual
+            $table->decimal('cost', 15, 2);  // harga modal
+            $table->decimal('subtotal', 15, 2);
+            $table->decimal('profit', 15, 2);
             $table->timestamps();
         });
     }

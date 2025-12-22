@@ -49,6 +49,15 @@ class Product extends Model
         return $this->hasMany(SaleItem::class);
     }
 
+    public static function generateSku($categoryId)
+    {
+        $count = self::withTrashed()
+            ->where('category_id', $categoryId)
+            ->count() + 1;
+
+        return 'CAT-' . $categoryId . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+    }
+
     public function stockLogs()
     {
         return $this->hasMany(StockLog::class);

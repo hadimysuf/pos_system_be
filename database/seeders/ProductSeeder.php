@@ -36,7 +36,7 @@ class ProductSeeder extends Seeder
                 'name' => 'Jaket Hoodie Polos',
                 'price' => 180000.00,
                 'cost' => 110000.00,
-                'stock' => 10,
+                'stock' => 4,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
