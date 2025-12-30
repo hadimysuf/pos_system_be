@@ -2,19 +2,48 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Notifications\Notifiable;
 
-class Role extends Model
+class Role extends Authenticatable
 {
-    protected $fillable = ['name'];
+    use HasFactory, Notifiable;
 
-    public function users()
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role_id',
+        'is_active',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected function casts(): array
     {
-        return $this->hasMany(User::class);
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
     }
 
-    public function accessMenus()
+    /* ===========================
+       🔗 RELATION
+    =========================== */
+
+    public function role()
     {
-        return $this->hasMany(RoleAccessMenu::class);
+        return $this->belongsTo(Role::class);
+    }
+
+    public function menus()
+    {
+        return $this->belongsToMany(Menu::class, 'role_access_menu')
+            ->withPivot(['can_view', 'can_create', 'can_update', 'can_delete'])
+            ->withTimestamps();
     }
 }

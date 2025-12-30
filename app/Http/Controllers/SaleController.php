@@ -9,6 +9,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class SaleController extends Controller
 {
@@ -45,7 +46,7 @@ class SaleController extends Controller
 
             $sale = Sale::create([
                 'invoice_number' => 'INV-' . now()->format('YmdHis'),
-                'user_id' => $request->user_id ?? 1,
+                'user_id' => $request->user()->id,
                 'sale_date' => now(),
                 'payment_method' => 'cash',
             ]);
@@ -112,5 +113,23 @@ class SaleController extends Controller
             'profit' => $query->sum('profit'),
             'total_transactions' => $query->count(),
         ]);
+    }
+    public function mySales(Request $request)
+    {
+        $user = $request->user();
+
+        $query = Sale::with('items')
+            ->where('user_id', $user->id);
+
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('sale_date', [
+                $request->start_date,
+                $request->end_date
+            ]);
+        }
+
+        return SaleResource::collection(
+            $query->latest()->paginate(10)
+        );
     }
 }
