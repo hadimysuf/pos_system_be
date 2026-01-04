@@ -8,25 +8,25 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class SaleController extends Controller
 {
     /**
-     * List sales + filter tanggal
+     * =========================
+     * ADMIN - LIST ALL SALES
+     * =========================
      */
-    public function index()
+    public function index(Request $request)
     {
-        $start = request('start_date');
-        $end   = request('end_date');
+        $query = Sale::with(['items', 'cashier']);
 
-        $query = Sale::query();
-
-        if ($start && $end) {
-            $query->whereBetween('sale_date', [$start, $end]);
-        } else {
-            $query->whereDate('created_at', Carbon::today());
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('sale_date', [
+                $request->start_date,
+                $request->end_date
+            ]);
         }
 
         return SaleResource::collection(
@@ -35,7 +35,9 @@ class SaleController extends Controller
     }
 
     /**
-     * Create new sale
+     * =========================
+     * KASIR - CREATE TRANSACTION
+     * =========================
      */
     public function store(SaleRequest $request)
     {
@@ -46,8 +48,8 @@ class SaleController extends Controller
 
             $sale = Sale::create([
                 'invoice_number' => 'INV-' . now()->format('YmdHis'),
-                'user_id' => $request->user()->id,
-                'sale_date' => now(),
+                'user_id'        => $request->user()->id,
+                'sale_date'      => now(),
                 'payment_method' => 'cash',
             ]);
 
@@ -90,36 +92,120 @@ class SaleController extends Controller
         });
     }
 
-
-
     /**
-     * Sales summary (dashboard)
+     * =========================
+     * ADMIN - DASHBOARD SUMMARY
+     * =========================
      */
-    public function summary()
+    public function summary(Request $request)
     {
-        $start = request('start_date');
-        $end   = request('end_date');
-
         $query = Sale::query();
 
-        if ($start && $end) {
-            $query->whereBetween('sale_date', [$start, $end]);
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('sale_date', [
+                $request->start_date,
+                $request->end_date
+            ]);
         } else {
             $query->whereDate('sale_date', today());
         }
 
         return response()->json([
-            'total_sales' => $query->sum('total_price'),
-            'profit' => $query->sum('profit'),
             'total_transactions' => $query->count(),
+            'total_amount'       => $query->sum('total_amount'),
+            'total_cost'         => $query->sum('total_cost'),
+            'total_profit'       => $query->sum('profit'),
         ]);
     }
-    public function mySales(Request $request)
+
+    
+    // public function mySales(Request $request)
+    // {
+    //     $user = $request->user();
+
+    //     $query = Sale::with('items')
+    //         ->where('user_id', $user->id);
+
+    //     if ($request->start_date && $request->end_date) {
+    //         $query->whereBetween('sale_date', [
+    //             $request->start_date,
+    //             $request->end_date
+    //         ]);
+    //     } else {
+    //         $query->whereDate('sale_date', today());
+    //     }
+
+    //     return SaleResource::collection(
+    //         $query->latest()->paginate(10)
+    //     );
+    // }
+
+    /**
+     * =========================
+     * KASIR - MY SUMMARY (TEXT INFO)
+     * =========================
+     */
+    public function mySummary(Request $request)
     {
         $user = $request->user();
 
-        $query = Sale::with('items')
-            ->where('user_id', $user->id);
+        $query = Sale::where('user_id', $user->id);
+
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('sale_date', [
+                $request->start_date,
+                $request->end_date
+            ]);
+        } else {
+            $query->whereDate('sale_date', today());
+        }
+
+        return response()->json([
+            'my_transactions' => $query->count(),
+            'my_total_sales'  => $query->sum('total_amount'),
+            'my_profit'       => $query->sum('profit'),
+        ]);
+    }
+
+    /**
+     * =========================
+     * KASIR - MY TRANSACTION HISTORY
+     * =========================
+     */
+
+    public function mySalesSummary(Request $request)
+    {
+        $user = $request->user();
+
+        $query = Sale::where('user_id', $user->id);
+
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('sale_date', [
+                $request->start_date,
+                $request->end_date
+            ]);
+        } else {
+            $query->whereDate('sale_date', today());
+        }
+
+        return response()->json([
+            'cashier'            => $user->name,
+            'total_transactions' => $query->count(),
+            'total_amount'       => $query->sum('total_amount'),
+            'total_cost'         => $query->sum('total_cost'),
+            'total_profit'       => $query->sum('profit'),
+        ]);
+    }
+
+    //admin audit transaksi per kasir
+
+    public function adminSales(Request $request)
+    {
+        $query = Sale::with(['cashier', 'items.product']);
+
+        if ($request->user_id) {
+            $query->where('user_id', $request->user_id);
+        }
 
         if ($request->start_date && $request->end_date) {
             $query->whereBetween('sale_date', [
@@ -130,6 +216,21 @@ class SaleController extends Controller
 
         return SaleResource::collection(
             $query->latest()->paginate(10)
+        );
+    }
+
+
+    public function show(Request $request, Sale $sale)
+    {
+        // Cegah kasir lihat transaksi kasir lain
+        if ($sale->user_id !== $request->user()->id) {
+            return response()->json([
+                'message' => 'Unauthorized access to this transaction'
+            ], 403);
+        }
+
+        return new SaleResource(
+            $sale->load(['items.product', 'cashier'])
         );
     }
 }

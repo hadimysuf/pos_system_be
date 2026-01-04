@@ -5,26 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\Sale;
 use App\Models\Product;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
     /**
-     * 📊 Sales Report
-     * GET /api/admin/reports/sales
+     * =========================
+     * GLOBAL SUMMARY
+     * =========================
      */
-    public function salesReport()
+    public function summary(Request $request)
     {
-        $start = request('start_date');
-        $end   = request('end_date');
-
         $query = Sale::query();
 
-        if ($start && $end) {
+        if ($request->start_date && $request->end_date) {
             $query->whereBetween('sale_date', [
-                Carbon::parse($start)->startOfDay(),
-                Carbon::parse($end)->endOfDay(),
+                Carbon::parse($request->start_date)->startOfDay(),
+                Carbon::parse($request->end_date)->endOfDay(),
             ]);
         }
 
@@ -37,181 +35,93 @@ class ReportController extends Controller
     }
 
     /**
-     * 💰 Profit Report (per hari)
+     * =========================
+     * TRANSACTION LIST
+     * =========================
      */
-    public function profitReport()
+    public function transactions(Request $request)
     {
-        $start = request('start_date') ?? now()->subDays(7);
-        $end   = request('end_date') ?? now();
+        $query = Sale::with(['cashier', 'items.product']);
 
-        $data = Sale::select(
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('sale_date', [
+                $request->start_date,
+                $request->end_date
+            ]);
+        }
+
+        if ($request->user_id) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        return $query->latest()->paginate(10);
+    }
+
+    /**
+     * =========================
+     * DETAIL 1 TRANSACTION
+     * =========================
+     */
+    public function transactionDetail(Sale $sale)
+    {
+        return response()->json(
+            $sale->load(['cashier', 'items.product'])
+        );
+    }
+
+    /**
+     * =========================
+     * AUDIT PER CASHIER
+     * =========================
+     */
+    public function reportByCashier(Request $request)
+    {
+        return Sale::select(
+            'user_id',
+            DB::raw('COUNT(*) as total_transactions'),
+            DB::raw('SUM(total_amount) as total_amount'),
+            DB::raw('SUM(profit) as total_profit')
+        )
+            ->with('cashier:id,name')
+            ->groupBy('user_id')
+            ->get();
+    }
+
+    /**
+     * =========================
+     * STOCK REPORT
+     * =========================
+     */
+    public function stock()
+    {
+        return Product::select(
+            'id',
+            'name',
+            'stock',
+            'low_stock_threshold'
+        )->orderBy('stock')->get();
+    }
+
+    /**
+     * =========================
+     * PROFIT CHART
+     * =========================
+     */
+    public function profitChart(Request $request)
+    {
+        $start = $request->start_date ?? now()->subDays(7);
+        $end   = $request->end_date ?? now();
+
+        return Sale::select(
             DB::raw('DATE(sale_date) as date'),
             DB::raw('SUM(profit) as profit')
         )
             ->whereBetween('sale_date', [
                 Carbon::parse($start)->startOfDay(),
-                Carbon::parse($end)->endOfDay(),
+                Carbon::parse($end)->endOfDay()
             ])
             ->groupBy('date')
             ->orderBy('date')
             ->get();
-
-        return response()->json($data);
-    }
-
-    /**
-     * 📦 Stock Report
-     */
-    public function stockReport()
-    {
-        $products = Product::select(
-            'id',
-            'name',
-            'stock',
-            'low_stock_threshold'
-        )
-            ->orderBy('stock')
-            ->get();
-
-        return response()->json($products);
-    }
-
-    /**
-     * 📊 Sales Transaction Report (Detail)
-     */
-    public function salesTransactions()
-    {
-        $start = request('start_date');
-        $end   = request('end_date');
-
-        $query = Sale::with(['items.product'])
-            ->when($start && $end, function ($q) use ($start, $end) {
-                $q->whereBetween('sale_date', [
-                    Carbon::parse($start)->startOfDay(),
-                    Carbon::parse($end)->endOfDay()
-                ]);
-            });
-
-        $sales = $query->latest()->paginate(10);
-
-        return response()->json([
-            'summary' => [
-                'total_transactions' => $query->count(),
-                'total_amount'       => $query->sum('total_amount'),
-                'total_cost'         => $query->sum('total_cost'),
-                'total_profit'       => $query->sum('profit'),
-            ],
-            'data' => $sales
-        ]);
-    }
-    public function transactionDetail(Request $request)
-    {
-        $from = $request->query('from', Carbon::today()->toDateString());
-        $to   = $request->query('to', Carbon::today()->toDateString());
-
-        $sales = Sale::with(['user', 'items.product'])
-            ->whereBetween('created_at', [
-                $from . ' 00:00:00',
-                $to . ' 23:59:59'
-            ])
-            ->get();
-
-        $transactions = [];
-        $totalAmount = 0;
-        $totalCost = 0;
-        $totalProfit = 0;
-
-        foreach ($sales as $sale) {
-
-            $items = [];
-            $saleCost = 0;
-
-            foreach ($sale->items as $item) {
-                $subtotal = $item->qty * $item->price;
-                $cost = $item->qty * $item->product->cost;
-                $profit = $subtotal - $cost;
-
-                $saleCost += $cost;
-
-                $items[] = [
-                    'product'  => $item->product->name,
-                    'qty'      => $item->qty,
-                    'price'    => $item->price,
-                    'cost'     => $item->product->cost,
-                    'subtotal' => $subtotal,
-                    'profit'   => $profit,
-                ];
-            }
-
-            $saleProfit = $sale->total - $saleCost;
-
-            $transactions[] = [
-                'invoice' => $sale->invoice_number,
-                'date'    => $sale->created_at->format('Y-m-d H:i:s'),
-                'cashier' => $sale->user->name ?? '-',
-                'total'   => $sale->total,
-                'cost'    => $saleCost,
-                'profit'  => $saleProfit,
-                'items'   => $items,
-            ];
-
-            $totalAmount += $sale->total;
-            $totalCost += $saleCost;
-            $totalProfit += $saleProfit;
-        }
-
-        return response()->json([
-            'summary' => [
-                'from' => $from,
-                'to' => $to,
-                'total_transactions' => count($transactions),
-                'total_amount' => $totalAmount,
-                'total_cost' => $totalCost,
-                'total_profit' => $totalProfit,
-            ],
-            'transactions' => $transactions
-        ]);
-    }
-    public function salesSummary()
-    {
-        $start = request('start_date');
-        $end   = request('end_date');
-
-        $query = Sale::query();
-
-        if ($start && $end) {
-            $query->whereBetween('sale_date', [
-                Carbon::parse($start)->startOfDay(),
-                Carbon::parse($end)->endOfDay(),
-            ]);
-        }
-
-        return response()->json([
-            'total_transactions' => $query->count(),
-            'total_amount'       => $query->sum('total_amount'),
-            'total_cost'         => $query->sum('total_cost'),
-            'total_profit'       => $query->sum('profit'),
-        ]);
-    }
-
-    /**
-     * 📄 DETAIL TRANSAKSI
-     */
-    public function salesDetail()
-    {
-        $start = request('start_date');
-        $end   = request('end_date');
-
-        $sales = Sale::with(['items.product'])
-            ->when($start && $end, function ($q) use ($start, $end) {
-                $q->whereBetween('sale_date', [
-                    Carbon::parse($start)->startOfDay(),
-                    Carbon::parse($end)->endOfDay(),
-                ]);
-            })
-            ->orderBy('sale_date', 'desc')
-            ->get();
-
-        return response()->json($sales);
     }
 }

@@ -12,7 +12,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ReportController;
-use SebastianBergmann\CodeCoverage\Report\Xml\Report;
+use App\Http\Controllers\WarehouseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,12 +29,10 @@ Route::post('/login', [AuthController::class, 'login']);
 */
 Route::apiResource('categories', CategoryController::class);
 Route::apiResource('products', ProductController::class);
-Route::apiResource('sales', SaleController::class);
-
 
 /*
 |--------------------------------------------------------------------------
-| AUTHENTICATED
+| AUTHENTICATED USER
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
@@ -43,7 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | DASHBOARD
+    | DASHBOARD (ALL LOGGED USER)
     |--------------------------------------------------------------------------
     */
     Route::prefix('dashboard')->group(function () {
@@ -52,6 +50,26 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/chart/profit', [DashboardController::class, 'profitChart']);
         Route::get('/chart/top-products', [DashboardController::class, 'topProducts']);
         Route::get('/low-stock', [DashboardController::class, 'lowStock']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | CASHIER
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('cashier')->group(function () {
+
+        // Buat transaksi
+        Route::post('/sales', [SaleController::class, 'store']);
+
+        // Riwayat transaksi kasir sendiri
+        Route::get('/sales', [SaleController::class, 'mySales']);
+
+        // Ringkasan transaksi kasir
+        Route::get('/sales/summary', [SaleController::class, 'mySalesSummary']);
+
+        // Detail transaksi kasir
+        Route::get('/sales/{sale}', [SaleController::class, 'show']);
     });
 
     /*
@@ -70,21 +88,52 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('role.access:MENU_MANAGE')
             ->apiResource('menus', MenuController::class);
 
-        Route::middleware('role.access:ROLE_ACCESS')
-            ->get('role-access', [RoleAccessMenuController::class, 'index']);
-
-        Route::middleware('role.access:ROLE_ACCESS')
-            ->post('role-access', [RoleAccessMenuController::class, 'store']);
-
-        Route::middleware('role.access:REPORTS')->group(function () {
-            Route::get('/reports/sales', [ReportController::class, 'salesReport']);
-            Route::get('/reports/profit', [ReportController::class, 'profitReport']);
-            Route::get('/reports/stock', [ReportController::class, 'stockReport']);
-            Route::get('/reports/sales-transactions', [ReportController::class, 'salesTransactions']);
-            Route::get('/reports/transaction', [ReportController::class, 'transactionDetail']);
-            Route::get('/reports/sales', [ReportController::class, 'salesSummary']);
-            Route::get('/reports/sales/detail', [ReportController::class, 'salesDetail']);
+        Route::middleware('role.access:ROLE_ACCESS')->group(function () {
+            Route::get('role-access', [RoleAccessMenuController::class, 'index']);
+            Route::post('role-access', [RoleAccessMenuController::class, 'store']);
         });
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REPORTS (ADMIN ONLY)
+        |--------------------------------------------------------------------------
+        */
+        Route::middleware('role.access:REPORTS')
+            ->prefix('reports')
+            ->group(function () {
+
+                // Ringkasan global
+                Route::get('/summary', [ReportController::class, 'summary']);
+
+                // Semua transaksi (filterable)
+                Route::get('/transactions', [ReportController::class, 'transactions']);
+
+                // Detail 1 transaksi
+                Route::get('/transactions/{sale}', [ReportController::class, 'transactionDetail']);
+
+                // Audit per kasir
+                Route::get('/cashier', [ReportController::class, 'reportByCashier']);
+
+                // Laporan stok
+                Route::get('/stock', [ReportController::class, 'stock']);
+
+                // Grafik profit
+                Route::get('/chart/profit', [ReportController::class, 'profitChart']);
+            });
+    });
+
+    Route::prefix('warehouse')->middleware('auth:sanctum')->group(function () {
+
+        Route::get('/stocks', [WarehouseController::class, 'index']);
+        Route::get('/low-stock', [WarehouseController::class, 'lowStock']);
+
+        Route::post('/stock-in', [WarehouseController::class, 'stockIn']);
+        Route::post('/stock-out', [WarehouseController::class, 'stockOut']);
+
+        Route::get('/logs', [WarehouseController::class, 'logs']);
     });
 
     /*

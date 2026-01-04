@@ -14,9 +14,10 @@ return new class extends Migration
             $table->string('sku')->unique(); // kode barang unik
             $table->string('name');
             $table->integer('stock')->default(0);
-            $table->integer('low_stock_threshold')->default(5); // batas stok menipis
+            $table->integer('low_stock_threshold')->default(10); // batas stok menipis
             $table->decimal('price', 10, 2);
             $table->decimal('cost', 12, 2);
+            $table->integer('max_stock')->default(500);
             $table->string('image')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
