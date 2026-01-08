@@ -120,9 +120,15 @@ class WarehouseController extends Controller
      */
     public function lowStock()
     {
-        return Product::whereColumn('stock', '<=', 'low_stock_threshold')
-            ->orderBy('stock')
+        $products = Product::whereColumn('stock', '<=', 'low_stock_threshold')
+            ->where('is_active', true)
             ->get();
+
+        return response()->json([
+            'status' => 'LOW_STOCK',
+            'total'  => $products->count(),
+            'data'   => $products
+        ]);
     }
 
     /**
@@ -139,5 +145,25 @@ class WarehouseController extends Controller
         }
 
         return $query->latest()->paginate(15);
+    }
+    
+    public function restockRecommendation()
+    {
+    $products = Product::whereColumn('stock', '<=', 'low_stock_threshold')
+        ->get()
+        ->map(function ($product) {
+            return [
+                'product_id' => $product->id,
+                'name'       => $product->name,
+                'current_stock' => $product->stock,
+                'recommended_order' => $product->max_stock - $product->stock,
+                'status' => 'NEED_RESTOCK'
+            ];
+        });
+
+    return response()->json([
+        'status' => 'OK',
+        'data'   => $products
+        ]);
     }
 }

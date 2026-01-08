@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('dashboard')->group(function () {
+        Route::get('/', [DashboardController::class, 'index']);
         Route::get('/summary', [DashboardController::class, 'summary']);
         Route::get('/chart/sales', [DashboardController::class, 'salesChart']);
         Route::get('/chart/profit', [DashboardController::class, 'profitChart']);
@@ -134,6 +135,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/stock-out', [WarehouseController::class, 'stockOut']);
 
         Route::get('/logs', [WarehouseController::class, 'logs']);
+
+        Route::get('/restock-recommendation', [WarehouseController::class, 'restockRecommendation']);
     });
 
     /*
