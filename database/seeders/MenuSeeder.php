@@ -19,6 +19,13 @@ class MenuSeeder extends Seeder
             ['name' => 'Laporan', 'code' => 'REPORTS', 'route' => '/reports', 'icon' => 'bar-chart', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'Notifikasi', 'code' => 'NOTIFS', 'route' => '/notifications', 'icon' => 'bell', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'User Management', 'code' => 'USER_MANAGE', 'route' => '/users', 'icon' => 'users', 'created_at' => now(), 'updated_at' => now()],
+            [
+                'code'  => 'ROLE_MANAGE',
+                'name'  => 'Role Management',
+                'route' => '/roles',
+                'icon'  => 'shield',
+                'order' => 0,
+            ]
         ]);
     }
 }

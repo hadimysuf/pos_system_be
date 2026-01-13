@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             MenuSeeder::class,
             RoleAccessMenuSeeder::class,
+            SalesSeeder::class,
+            SaleItemSeeder::class,
         ]);
     }
 }
