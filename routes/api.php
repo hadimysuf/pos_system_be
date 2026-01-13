@@ -14,6 +14,16 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WarehouseController;
 
+
+
+Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
+    return response()->json([
+        'user' => $request->user(),
+        'token' => $request->bearerToken(),
+    ]);
+});
+
+
 /*
 |--------------------------------------------------------------------------
 | AUTH
@@ -123,6 +133,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
                 // Grafik profit
                 Route::get('/chart/profit', [ReportController::class, 'profitChart']);
+
+                Route::get(
+                    '/transactions/export/csv',
+                    [ReportController::class, 'exportTransactionsCsv']
+                );
+
+                Route::get(
+                    '/transactions/export/pdf',
+                    [ReportController::class, 'exportTransactionsPdf']
+                );
+                Route::get(
+                    '/transactions/{sale}/export/pdf',
+                    [ReportController::class, 'exportTransactionDetailPdf']
+                );
             });
     });
 
@@ -135,8 +159,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/stock-out', [WarehouseController::class, 'stockOut']);
 
         Route::get('/logs', [WarehouseController::class, 'logs']);
-
         Route::get('/restock-recommendation', [WarehouseController::class, 'restockRecommendation']);
+
     });
 
     /*
