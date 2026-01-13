@@ -12,15 +12,7 @@ class Role extends Authenticatable
 
     protected $fillable = [
         'name',
-        'email',
-        'password',
-        'role_id',
-        'is_active',
-    ];
-
-    protected $hidden = [
-        'password',
-        'remember_token',
+        'description',
     ];
 
     protected function casts(): array
@@ -34,11 +26,6 @@ class Role extends Authenticatable
     /* ===========================
        🔗 RELATION
     =========================== */
-
-    public function role()
-    {
-        return $this->belongsTo(Role::class);
-    }
 
     public function menus()
     {
