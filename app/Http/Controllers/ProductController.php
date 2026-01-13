@@ -65,6 +65,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate([
+            'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:150',
             'price' => 'required|numeric|min:0',
             'cost' => 'required|numeric|min:0',
@@ -107,10 +108,19 @@ class ProductController extends Controller
     private function generateSku(Category $category): string
     {
         $prefix = strtoupper(Str::substr($category->name, 0, 3));
-        $count  = Product::where('category_id', $category->id)
-            ->withTrashed()
-            ->count() + 1;
 
-        return $prefix . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+        $lastSku = Product::where('category_id', $category->id)
+            ->withTrashed()
+            ->where('sku', 'like', $prefix . '-%')
+            ->orderBy('sku', 'desc')
+            ->value('sku');
+
+        $number = 1;
+
+        if ($lastSku) {
+            $number = (int) substr($lastSku, -5) + 1;
+        }
+
+        return $prefix . '-' . str_pad($number, 5, '0', STR_PAD_LEFT);
     }
 }
