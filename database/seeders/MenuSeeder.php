@@ -30,6 +30,13 @@ class MenuSeeder extends Seeder
             
             // Admin
             ['name' => 'User Management', 'code' => 'USER_MANAGE', 'route' => '/users', 'icon' => 'users', 'created_at' => now(), 'updated_at' => now()],
+            [
+                'code'  => 'ROLE_MANAGE',
+                'name'  => 'Role Management',
+                'route' => '/roles',
+                'icon'  => 'shield',
+                'order' => 0,
+            ]
         ]);
     }
 }

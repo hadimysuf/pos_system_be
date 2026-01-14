@@ -17,6 +17,16 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\MidtransController;
 
+
+
+Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
+    return response()->json([
+        'user' => $request->user(),
+        'token' => $request->bearerToken(),
+    ]);
+});
+
+
 /*
 |--------------------------------------------------------------------------
 | AUTH
@@ -131,6 +141,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
                 // Grafik profit
                 Route::get('/chart/profit', [ReportController::class, 'profitChart']);
+
+                Route::get(
+                    '/transactions/export/csv',
+                    [ReportController::class, 'exportTransactionsCsv']
+                );
+
+                Route::get(
+                    '/transactions/export/pdf',
+                    [ReportController::class, 'exportTransactionsPdf']
+                );
+                Route::get(
+                    '/transactions/{sale}/export/pdf',
+                    [ReportController::class, 'exportTransactionDetailPdf']
+                );
             });
     });
 
