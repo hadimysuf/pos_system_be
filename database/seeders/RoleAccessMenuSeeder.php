@@ -23,6 +23,7 @@ class RoleAccessMenuSeeder extends Seeder
                 'CATEGORY_MANAGE'  => [1, 1, 1, 1],
                 'STOCK_IN'         => [1, 1, 1, 1],
                 'STOCK_OUT'        => [1, 1, 1, 1],
+                'PURCHASE_ORDERS'  => [1, 1, 1, 1],
                 'SALES'            => [1, 1, 1, 1],
                 'REPORTS'          => [1, 1, 1, 1],
                 'NOTIFS'           => [1, 1, 1, 1],
@@ -40,6 +41,7 @@ class RoleAccessMenuSeeder extends Seeder
                 'PRODUCT_MANAGE'   => [1, 0, 1, 0],
                 'STOCK_IN'         => [1, 1, 1, 0],
                 'STOCK_OUT'        => [1, 1, 1, 0],
+                'PURCHASE_ORDERS'  => [1, 1, 1, 0],
                 'NOTIFS'           => [1, 0, 0, 0],
             ],
         ];

@@ -23,4 +23,8 @@ class StockLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
+    }
 }

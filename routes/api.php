@@ -13,6 +13,9 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\MidtransController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +32,8 @@ Route::post('/login', [AuthController::class, 'login']);
 */
 Route::apiResource('categories', CategoryController::class);
 Route::apiResource('products', ProductController::class);
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -94,6 +99,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('role-access', [RoleAccessMenuController::class, 'store']);
         });
 
+        Route::middleware('role.access:SUPPLIER_MANAGE')
+            ->apiResource('suppliers', SupplierController::class);
+
 
 
 
@@ -126,23 +134,67 @@ Route::middleware('auth:sanctum')->group(function () {
             });
     });
 
-    Route::prefix('warehouse')->middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum'])->group(function () {
 
-        Route::get('/stocks', [WarehouseController::class, 'index']);
-        Route::get('/low-stock', [WarehouseController::class, 'lowStock']);
+        Route::prefix('warehouse')
+            ->middleware('role.access:WAREHOUSE_ACCESS')
+            ->group(function () {
 
-        Route::post('/stock-in', [WarehouseController::class, 'stockIn']);
-        Route::post('/stock-out', [WarehouseController::class, 'stockOut']);
+                Route::get('/', [WarehouseController::class, 'index']);
 
-        Route::get('/logs', [WarehouseController::class, 'logs']);
+                Route::middleware('role.access:STOCK_IN')
+                    ->post('/stock-in', [WarehouseController::class, 'stockIn']);
 
-        Route::get('/restock-recommendation', [WarehouseController::class, 'restockRecommendation']);
+                Route::middleware('role.access:STOCK_OUT')
+                    ->post('/stock-out', [WarehouseController::class, 'stockOut']);
+
+                Route::middleware('role.access:STOCK_LOGS')
+                    ->get('/logs', [WarehouseController::class, 'logs']);
+
+                Route::middleware('role.access:RESTOCK_RECOMMENDATION')
+                    ->get('/restock-recommendation', [WarehouseController::class, 'restockRecommendation']);
+
+                Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])
+                    ->middleware('role.access:PURCHASE_ORDERS');
+
+                Route::post('/purchase-orders', [PurchaseOrderController::class, 'store'])
+                    ->middleware('role.access:PURCHASE_ORDERS');
+
+                Route::put('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'update'])
+                    ->middleware('role.access:PURCHASE_ORDERS');
+
+                Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])
+                    ->middleware('role.access:PURCHASE_ORDERS');
+
+                Route::post('/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])
+                    ->middleware('role.access:PURCHASE_ORDERS');
+
+                Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])
+                    ->middleware('role.access:PURCHASE_ORDERS');
+            });
     });
-
     /*
     |--------------------------------------------------------------------------
     | LOGOUT
     |--------------------------------------------------------------------------
     */
     Route::post('/logout', [AuthController::class, 'logout']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| PUBLIC (MIDTRANS CALLBACK)
+|--------------------------------------------------------------------------
+*/
+Route::post('/midtrans/callback', [MidtransController::class, 'callback']);
+
+/*
+|--------------------------------------------------------------------------
+| MIDTRANS (HANYA UNTUK USER LOGIN)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/midtrans/charge', [MidtransController::class, 'create']);
+    Route::post('/midtrans/create', [MidtransController::class, 'createTransaction']);
 });

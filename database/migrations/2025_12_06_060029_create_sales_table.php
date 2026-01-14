@@ -21,6 +21,14 @@ return new class extends Migration
 
 
             $table->string('payment_method')->default('cash');
+            // 🔥 Kolom Midtrans
+            $table->string('order_id')->nullable();
+            $table->string('transaction_status')->default('pending');
+            $table->string('payment_type')->nullable();
+            $table->string('fraud_status')->nullable();
+            $table->string('transaction_id')->nullable();
+            $table->timestamp('transaction_time')->nullable();
+
             $table->timestamps();
         });
     }

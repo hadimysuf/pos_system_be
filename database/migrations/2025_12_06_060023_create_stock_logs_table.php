@@ -10,13 +10,12 @@ return new class extends Migration
     {
         Schema::create('stock_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('type'); // in / out / adjustment / return / cancel
-
-            $table->integer('change'); // +10 masuk, -5 keluar
+            $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('type');
+            $table->integer('change');
             $table->string('note')->nullable();
-
             $table->timestamps();
         });
     }

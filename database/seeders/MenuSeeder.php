@@ -13,11 +13,22 @@ class MenuSeeder extends Seeder
             ['name' => 'Dashboard', 'code' => 'DASHBOARD', 'route' => '/dashboard', 'icon' => 'dashboard', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'Produk', 'code' => 'PRODUCT_MANAGE', 'route' => '/products', 'icon' => 'box', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'Kategori', 'code' => 'CATEGORY_MANAGE', 'route' => '/categories', 'icon' => 'tags', 'created_at' => now(), 'updated_at' => now()],
+            
+            // Modul Gudang
             ['name' => 'Stok Masuk', 'code' => 'STOCK_IN', 'route' => '/stock-in', 'icon' => 'download', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'Stok Keluar', 'code' => 'STOCK_OUT', 'route' => '/stock-out', 'icon' => 'upload', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Purchase Order', 'code' => 'PURCHASE_ORDERS', 'route' => '/purchase-orders', 'icon' => 'file-text', 'created_at' => now(), 'updated_at' => now()],
+            
+            // Kasir
             ['name' => 'Transaksi', 'code' => 'SALES', 'route' => '/sales', 'icon' => 'shopping-cart', 'created_at' => now(), 'updated_at' => now()],
+            
+            // Laporan
             ['name' => 'Laporan', 'code' => 'REPORTS', 'route' => '/reports', 'icon' => 'bar-chart', 'created_at' => now(), 'updated_at' => now()],
+            
+            // Sistem
             ['name' => 'Notifikasi', 'code' => 'NOTIFS', 'route' => '/notifications', 'icon' => 'bell', 'created_at' => now(), 'updated_at' => now()],
+            
+            // Admin
             ['name' => 'User Management', 'code' => 'USER_MANAGE', 'route' => '/users', 'icon' => 'users', 'created_at' => now(), 'updated_at' => now()],
         ]);
     }

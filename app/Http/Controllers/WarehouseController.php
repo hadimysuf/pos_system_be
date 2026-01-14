@@ -35,6 +35,7 @@ class WarehouseController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
+            'supplier_id' => 'nullable|exists:suppliers,id',
             'quantity'   => 'required|integer|min:1',
             'note'       => 'nullable|string'
         ]);
@@ -60,6 +61,7 @@ class WarehouseController extends Controller
             StockLog::create([
                 'product_id' => $product->id,
                 'user_id'    => $request->user()->id,
+                'supplier_id' => $request->supplier_id ?? null,
                 'type'       => 'IN',
                 'change'     => $qty,
                 'note'       => $request->note ?? 'Pengadaan barang'
@@ -138,7 +140,7 @@ class WarehouseController extends Controller
      */
     public function logs(Request $request)
     {
-        $query = StockLog::with(['product', 'user']);
+        $query = StockLog::with(['product', 'user', 'supplier']);
 
         if ($request->product_id) {
             $query->where('product_id', $request->product_id);
@@ -146,24 +148,24 @@ class WarehouseController extends Controller
 
         return $query->latest()->paginate(15);
     }
-    
+
     public function restockRecommendation()
     {
-    $products = Product::whereColumn('stock', '<=', 'low_stock_threshold')
-        ->get()
-        ->map(function ($product) {
-            return [
-                'product_id' => $product->id,
-                'name'       => $product->name,
-                'current_stock' => $product->stock,
-                'recommended_order' => $product->max_stock - $product->stock,
-                'status' => 'NEED_RESTOCK'
-            ];
-        });
+        $products = Product::whereColumn('stock', '<=', 'low_stock_threshold')
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'product_id' => $product->id,
+                    'name'       => $product->name,
+                    'current_stock' => $product->stock,
+                    'recommended_order' => $product->max_stock - $product->stock,
+                    'status' => 'NEED_RESTOCK'
+                ];
+            });
 
-    return response()->json([
-        'status' => 'OK',
-        'data'   => $products
+        return response()->json([
+            'status' => 'OK',
+            'data'   => $products
         ]);
     }
 }
