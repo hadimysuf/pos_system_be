@@ -55,6 +55,7 @@ class PurchaseOrderController extends Controller
 
         $po = PurchaseOrder::create([
             'supplier_id'     => $request->supplier_id,
+            'user_id'         => $request->user()->id,
             'order_date'      => now(),
             'expected_arrival' => $request->expected_arrival ?? now()->addDays(7),
             'status'          => 'PENDING',

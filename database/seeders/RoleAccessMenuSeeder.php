@@ -37,6 +37,7 @@ class RoleAccessMenuSeeder extends Seeder
             ],
 
             'Gudang' => [
+                'WAREHOUSE_ACCESS' => [1, 1, 1, 1],
                 'DASHBOARD'        => [1, 0, 0, 0],
                 'PRODUCT_MANAGE'   => [1, 0, 1, 0],
                 'STOCK_IN'         => [1, 1, 1, 0],
