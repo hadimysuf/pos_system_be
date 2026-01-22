@@ -2,30 +2,22 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\MenuController;
-use App\Http\Controllers\RoleAccessMenuController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\SaleController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\WarehouseController;
-use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\PurchaseOrderController;
-use App\Http\Controllers\MidtransController;
-
-
-
-Route::middleware('auth:sanctum')->get('/test-auth', function (Request $request) {
-    return response()->json([
-        'user' => $request->user(),
-        'token' => $request->bearerToken(),
-    ]);
-});
-
+use App\Http\Controllers\{
+    AuthController,
+    UserController,
+    RoleController,
+    MenuController,
+    RoleAccessMenuController,
+    DashboardController,
+    ProductController,
+    CategoryController,
+    SaleController,
+    ReportController,
+    WarehouseController,
+    SupplierController,
+    PurchaseOrderController,
+    MidtransController
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -42,12 +34,11 @@ Route::post('/login', [AuthController::class, 'login']);
 */
 Route::apiResource('categories', CategoryController::class);
 Route::apiResource('products', ProductController::class);
-
-
+Route::post('/midtrans/callback', [MidtransController::class, 'callback']);
 
 /*
 |--------------------------------------------------------------------------
-| AUTHENTICATED USER
+| AUTHENTICATED
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
@@ -56,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | DASHBOARD (ALL LOGGED USER)
+    | DASHBOARD
     |--------------------------------------------------------------------------
     */
     Route::prefix('dashboard')->group(function () {
@@ -74,23 +65,15 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('cashier')->group(function () {
-
-        // Buat transaksi
         Route::post('/sales', [SaleController::class, 'store']);
-
-        // Riwayat transaksi kasir sendiri
         Route::get('/sales', [SaleController::class, 'mySales']);
-
-        // Ringkasan transaksi kasir
         Route::get('/sales/summary', [SaleController::class, 'mySalesSummary']);
-
-        // Detail transaksi kasir
         Route::get('/sales/{sale}', [SaleController::class, 'show']);
     });
 
     /*
     |--------------------------------------------------------------------------
-    | ADMIN (ROLE BASED ACCESS)
+    | ADMIN
     |--------------------------------------------------------------------------
     */
     Route::prefix('admin')->group(function () {
@@ -109,116 +92,63 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('role-access', [RoleAccessMenuController::class, 'store']);
         });
 
-        Route::middleware('role.access:SUPPLIER_MANAGE')
-            ->apiResource('suppliers', SupplierController::class);
+        Route::middleware('role.access:SUPPLIER_MANAGE')->group(function () {
+            Route::apiResource('suppliers', SupplierController::class);
+            Route::put('suppliers/{supplier}/activate', [SupplierController::class, 'activate']);
+        });
 
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | REPORTS (ADMIN ONLY)
-        |--------------------------------------------------------------------------
-        */
         Route::middleware('role.access:REPORTS')
             ->prefix('reports')
             ->group(function () {
-
-                // Ringkasan global
                 Route::get('/summary', [ReportController::class, 'summary']);
-
-                // Semua transaksi (filterable)
                 Route::get('/transactions', [ReportController::class, 'transactions']);
-
-                // Detail 1 transaksi
                 Route::get('/transactions/{sale}', [ReportController::class, 'transactionDetail']);
-
-                // Audit per kasir
                 Route::get('/cashier', [ReportController::class, 'reportByCashier']);
-
-                // Laporan stok
                 Route::get('/stock', [ReportController::class, 'stock']);
-
-                // Grafik profit
                 Route::get('/chart/profit', [ReportController::class, 'profitChart']);
-
-                Route::get(
-                    '/transactions/export/csv',
-                    [ReportController::class, 'exportTransactionsCsv']
-                );
-
-                Route::get(
-                    '/transactions/export/pdf',
-                    [ReportController::class, 'exportTransactionsPdf']
-                );
-                Route::get(
-                    '/transactions/{sale}/export/pdf',
-                    [ReportController::class, 'exportTransactionDetailPdf']
-                );
+                Route::get('/transactions/export/csv', [ReportController::class, 'exportTransactionsCsv']);
+                Route::get('/transactions/export/pdf', [ReportController::class, 'exportTransactionsPdf']);
+                Route::get('/transactions/{sale}/export/pdf', [ReportController::class, 'exportTransactionDetailPdf']);
             });
     });
 
-    Route::middleware(['auth:sanctum'])->group(function () {
-
-        Route::prefix('warehouse')
-            ->middleware('role.access:WAREHOUSE_ACCESS')
-            ->group(function () {
-
-                Route::get('/', [WarehouseController::class, 'index']);
-
-                Route::middleware('role.access:STOCK_IN')
-                    ->post('/stock-in', [WarehouseController::class, 'stockIn']);
-
-                Route::middleware('role.access:STOCK_OUT')
-                    ->post('/stock-out', [WarehouseController::class, 'stockOut']);
-
-                Route::middleware('role.access:STOCK_LOGS')
-                    ->get('/logs', [WarehouseController::class, 'logs']);
-
-                Route::middleware('role.access:RESTOCK_RECOMMENDATION')
-                    ->get('/restock-recommendation', [WarehouseController::class, 'restockRecommendation']);
-
-                Route::get('/purchase-orders', [PurchaseOrderController::class, 'index'])
-                    ->middleware('role.access:PURCHASE_ORDERS');
-
-                Route::post('/purchase-orders', [PurchaseOrderController::class, 'store'])
-                    ->middleware('role.access:PURCHASE_ORDERS');
-
-                Route::put('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'update'])
-                    ->middleware('role.access:PURCHASE_ORDERS');
-
-                Route::post('/purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])
-                    ->middleware('role.access:PURCHASE_ORDERS');
-
-                Route::post('/purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])
-                    ->middleware('role.access:PURCHASE_ORDERS');
-
-                Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'show'])
-                    ->middleware('role.access:PURCHASE_ORDERS');
-            });
-    });
     /*
     |--------------------------------------------------------------------------
-    | LOGOUT
+    | WAREHOUSE
     |--------------------------------------------------------------------------
     */
+    Route::prefix('warehouse')
+        ->middleware('role.access:WAREHOUSE_ACCESS')
+        ->group(function () {
+
+            Route::get('/', [WarehouseController::class, 'index']);
+
+            Route::post('/stock-in', [WarehouseController::class, 'stockIn'])
+                ->middleware('role.access:STOCK_IN');
+
+            Route::post('/stock-out', [WarehouseController::class, 'stockOut'])
+                ->middleware('role.access:STOCK_OUT');
+
+            Route::get('/logs', [WarehouseController::class, 'logs'])
+                ->middleware('role.access:STOCK_LOGS');
+
+            Route::get('/restock-recommendation', [WarehouseController::class, 'restockRecommendation'])
+                ->middleware('role.access:RESTOCK_RECOMMENDATION');
+
+            Route::apiResource('purchase-orders', PurchaseOrderController::class)
+                ->middleware('role.access:PURCHASE_ORDERS');
+
+            Route::post('purchase-orders/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve']);
+            Route::post('purchase-orders/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel']);
+        });
+
+    /*
+    |--------------------------------------------------------------------------
+    | MIDTRANS (LOGIN)
+    |--------------------------------------------------------------------------
+    */
+    Route::post('/midtrans/create', [MidtransController::class, 'create']);
+    Route::post('/midtrans/finalize/{orderId}', [MidtransController::class, 'finalize']);
+
     Route::post('/logout', [AuthController::class, 'logout']);
-});
-
-/*
-|--------------------------------------------------------------------------
-| PUBLIC (MIDTRANS CALLBACK)
-|--------------------------------------------------------------------------
-*/
-Route::post('/midtrans/callback', [MidtransController::class, 'callback']);
-
-/*
-|--------------------------------------------------------------------------
-| MIDTRANS (HANYA UNTUK USER LOGIN)
-|--------------------------------------------------------------------------
-*/
-Route::middleware('auth:sanctum')->group(function () {
-
-    Route::post('/midtrans/charge', [MidtransController::class, 'create']);
-    Route::post('/midtrans/create', [MidtransController::class, 'createTransaction']);
 });
