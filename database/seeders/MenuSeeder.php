@@ -10,29 +10,164 @@ class MenuSeeder extends Seeder
     public function run()
     {
         DB::table('menus')->insert([
-            ['name' => 'Dashboard', 'code' => 'DASHBOARD', 'route' => '/dashboard', 'icon' => 'dashboard', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Produk', 'code' => 'PRODUCT_MANAGE', 'route' => '/products', 'icon' => 'box', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Kategori', 'code' => 'CATEGORY_MANAGE', 'route' => '/categories', 'icon' => 'tags', 'created_at' => now(), 'updated_at' => now()],
+            // Dashboard
+            [
+                'code' => 'DASHBOARD',
+                'name' => 'Dashboard',
+                'route' => '/dashboard',
+                'icon' => 'dashboard',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
 
-            // Modul Gudang
-            ['name' => 'Stok Masuk', 'code' => 'STOCK_IN', 'route' => '/stock-in', 'icon' => 'download', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Stok Keluar', 'code' => 'STOCK_OUT', 'route' => '/stock-out', 'icon' => 'upload', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Purchase Order', 'code' => 'PURCHASE_ORDERS', 'route' => '/purchase-orders', 'icon' => 'file-text', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Warehouse', 'code' => 'WAREHOUSE_ACCESS', 'route' => '/warehouse', 'icon' => 'warehouse', 'created_at' => now(), 'updated_at' => now()],
+            // Produk & Kategori
+            [
+                'code' => 'PRODUCT_MANAGE',
+                'name' => 'Produk',
+                'route' => '/products',
+                'icon' => 'box',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'code' => 'CATEGORY_MANAGE',
+                'name' => 'Kategori',
+                'route' => '/categories',
+                'icon' => 'tags',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+
+            // Gudang
+            [
+                'code' => 'STOCK_IN',
+                'name' => 'Stok Masuk',
+                'route' => '/stock-in',
+                'icon' => 'download',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'code' => 'STOCK_OUT',
+                'name' => 'Stok Keluar',
+                'route' => '/stock-out',
+                'icon' => 'upload',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'code' => 'PURCHASE_ORDERS',
+                'name' => 'Purchase Order',
+                'route' => '/purchase-orders',
+                'icon' => 'file-text',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'code' => 'WAREHOUSE_ACCESS',
+                'name' => 'Warehouse',
+                'route' => '/warehouse',
+                'icon' => 'warehouse',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
 
             // Kasir
-            ['name' => 'Transaksi', 'code' => 'SALES', 'route' => '/sales', 'icon' => 'shopping-cart', 'created_at' => now(), 'updated_at' => now()],
+            [
+                'code' => 'SALES',
+                'name' => 'Transaksi',
+                'route' => '/sales',
+                'icon' => 'shopping-cart',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
 
             // Laporan
-            ['name' => 'Laporan', 'code' => 'REPORTS', 'route' => '/reports', 'icon' => 'bar-chart', 'created_at' => now(), 'updated_at' => now()],
+            [
+                'code' => 'REPORTS',
+                'name' => 'Laporan',
+                'route' => '/reports',
+                'icon' => 'bar-chart',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
 
             // Sistem
-            ['name' => 'Notifikasi', 'code' => 'NOTIFS', 'route' => '/notifications', 'icon' => 'bell', 'created_at' => now(), 'updated_at' => now()],
+            [
+                'code' => 'NOTIFS',
+                'name' => 'Notifikasi',
+                'route' => '/notifications',
+                'icon' => 'bell',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
 
             // Admin
-            ['name' => 'User Management', 'code' => 'USER_MANAGE', 'route' => '/users', 'icon' => 'users', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'Role Management', 'code' => 'ROLE_MANAGE', 'route' => '/roles', 'icon' => 'shield', 'created_at' => now(), 'updated_at' => now()],
+            [
+                'code' => 'USER_MANAGE',
+                'name' => 'User Management',
+                'route' => '/users',
+                'icon' => 'users',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'code' => 'ROLE_MANAGE',
+                'name' => 'Role Management',
+                'route' => '/roles',
+                'icon' => 'shield',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
 
+            [
+                'code' => 'RESTOCK_RECOMMENDATION',
+                'name' => 'Restock Recommendation',
+                'route' => '/warehouse/restock-recommendation',
+                'icon' => 'stock',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'code' => 'ROLE_ACCESS',
+                'name' => 'Role Access',
+                'route' => '/admin/role-access',
+                'icon' => 'person',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'code' => 'SUPPLIER_MANAGE',
+                'name' => 'Supplier Manage',
+                'route' => '/admin/suppliers',
+                'icon' => 'UserStar',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'code' => 'STOCK_LOGS',
+                'name' => 'Stock Logs',
+                'route' => '/gudang/logs',
+                'icon' => 'items',
+                'order' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
 }
