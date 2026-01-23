@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('sales', function (Blueprint $table) {
-            $table->json('items_snapshot')->after('transaction_status');
+            $table->json('items_snapshot')->nullable()->after('transaction_status');
         });
     }
 
