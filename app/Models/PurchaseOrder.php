@@ -13,25 +13,31 @@ class PurchaseOrder extends Model
         'supplier_id',
         'user_id',
         'order_date',
-        'expected_arrival',
-        'status',
         'items',
         'total_quantity',
+        'expected_arrival',
+        'status',
         'note',
+        'approved_at',
     ];
 
     protected $casts = [
-        'items' => 'array',      // JSON product list
-        'order_date' => 'datetime',
-        'expected_arrival' => 'datetime',
+        'items' => 'array',
+        'approved_at' => 'datetime',
+        'order_date' => 'date',
+        'expected_arrival' => 'date',
     ];
 
-    /**
-     * Supplier that provides the goods
-     */
+    // ================= RELATION =================
+
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**

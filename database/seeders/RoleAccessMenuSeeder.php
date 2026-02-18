@@ -28,6 +28,7 @@ class RoleAccessMenuSeeder extends Seeder
                 'REPORTS'          => [1, 1, 1, 1],
                 'NOTIFS'           => [1, 1, 1, 1],
                 'USER_MANAGE'      => [1, 1, 1, 1],
+                'ROLE_MANAGE'      => [1, 1, 1, 1]
             ],
 
             'Kasir' => [

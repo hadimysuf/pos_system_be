@@ -218,7 +218,6 @@ Route::post('/midtrans/callback', [MidtransController::class, 'callback']);
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-
     Route::post('/midtrans/charge', [MidtransController::class, 'create']);
     Route::post('/midtrans/create', [MidtransController::class, 'createTransaction']);
 });
