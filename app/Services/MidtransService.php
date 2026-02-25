@@ -66,7 +66,7 @@ class MidtransService
                 'total_amount'       => $totalAmount,
                 'total_cost'         => $totalCost,
                 'profit'             => $totalAmount - $totalCost,
-               
+
             ]);
         });
     }
