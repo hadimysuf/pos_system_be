@@ -15,6 +15,26 @@ use Illuminate\Support\Facades\Auth;
 
 class ReturnController extends Controller
 {
+    public function index()
+    {
+        $returns = ReturnTransaction::with([
+            'sale',
+            'items.saleItem.product'
+        ])->latest()->get();
+
+        return response()->json([
+            'data' => $returns
+        ]);
+    }
+    // public function show($id)
+    // {
+    //     $sale = Sale::with('items.product')
+    //         ->findOrFail($id);
+
+    //     return response()->json([
+    //         'data' => $sale
+    //     ]);
+    // }
     /*
     |--------------------------------------------------------------------------
     | STORE (Kasir Ajukan Return)
@@ -109,7 +129,7 @@ class ReturnController extends Controller
 
                 $product = $item->saleItem->product;
 
-                // Tambah stok
+                // Tambah stok  
                 $product->increment('stock', $item->quantity);
 
                 // Stock log
@@ -162,6 +182,23 @@ class ReturnController extends Controller
 
         return response()->json([
             'message' => 'Return ditolak'
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DETAIL RETURN
+    |--------------------------------------------------------------------------
+    */
+    public function detail($id)
+    {
+        $return = ReturnTransaction::with([
+            'sale',
+            'items.saleItem.product'
+        ])->findOrFail($id);
+
+        return response()->json([
+            'data' => $return
         ]);
     }
 }
