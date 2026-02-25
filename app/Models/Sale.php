@@ -7,13 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class Sale extends Model
 {
     protected $fillable = [
-        'user_id',
-        'total_amount',
-        'profit',
         'invoice_number',
+        'user_id',
         'sale_date',
         'payment_method',
+        'transaction_status',
+        'items_snapshot',
+        'total_amount',
         'total_cost',
+        'profit',
+        'order_id',
     ];
 
     public function cashier()

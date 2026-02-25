@@ -64,6 +64,23 @@ class SupplierController extends Controller
         ]);
     }
 
+    public function activate(Supplier $supplier)
+    {
+        if ($supplier->is_active) {
+            return response()->json([
+                'message' => 'Supplier sudah aktif'
+            ], 400);
+        }
+
+        $supplier->update(['is_active' => true]);
+
+        return response()->json([
+            'message' => 'Supplier berhasil diaktifkan kembali',
+            'data' => $supplier
+        ]);
+    }
+
+
     /**
      * 🗑 Nonaktifkan supplier (soft delete manual)
      */

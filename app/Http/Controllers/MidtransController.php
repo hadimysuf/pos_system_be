@@ -3,103 +3,135 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Midtrans\Snap;
 use Midtrans\Config;
+use Midtrans\Snap;
+use Midtrans\Transaction;
 use App\Models\Sale;
+use App\Services\MidtransService;
+use Illuminate\Support\Str;
+use App\Models\Product;
+use Illuminate\Support\Facades\DB;
+use App\Models\SaleItem;
 
 class MidtransController extends Controller
 {
-    public function __construct()
-    {
-        // Set Midtrans config
+    public function __construct(
+        protected MidtransService $midtransService
+    ) {
         Config::$serverKey    = config('midtrans.server_key');
-        Config::$isProduction = config('midtrans.is_production');
-        Config::$isSanitized  = config('midtrans.is_sanitized');
-        Config::$is3ds        = config('midtrans.is_3ds');
+        Config::$isProduction = false; 
+        Config::$isSanitized  = true;
+        Config::$is3ds        = true;
     }
 
-    public function createTransaction(Request $request)
+
+    public function create(Request $request)
     {
-        // Ambil user yang login via Sanctum
-        $user = Auth::user(); // <--- aman karena route pakai auth:sanctum
+        $request->validate([
+            'items' => 'required|array|min:1'
+        ]);
 
-        if (!$user) {
-            return response()->json(['error' => 'User tidak terautentikasi'], 401);
-        }
+        $orderId = 'INV-' . Str::uuid();
+        $user = $request->user();
 
-        $orderId = 'INV-' . time();
-
-        // Simpan data ke database
         $sale = Sale::create([
             'invoice_number'     => $orderId,
             'order_id'           => $orderId,
-            'user_id'            => $user->id,   // <--- otomatis id user kasir
+            'user_id'            => $user->id,
             'sale_date'          => now(),
-            'total_amount'       => $request->amount,
-            'total_cost'         => 0,
-            'profit'             => 0,
             'payment_method'     => 'midtrans',
             'transaction_status' => 'pending',
+            'items_snapshot'     => json_encode($request->items),
         ]);
 
-        // Parameter Midtrans
-        $params = [
+        $grossAmount = collect($request->items)->sum(function ($i) {
+            $product = Product::find($i['product_id']);
+            return $product->price * $i['quantity'];
+        });
+
+        $snapToken = \Midtrans\Snap::getSnapToken([
             'transaction_details' => [
                 'order_id' => $orderId,
-                'gross_amount' => $request->amount,
+                'gross_amount' => $grossAmount,
             ],
             'customer_details' => [
                 'first_name' => $user->name,
-                'email'      => $user->email,
+                'email' => $user->email,
             ],
-        ];
-
-        // Generate SNAP TOKEN
-        $snapToken = Snap::getSnapToken($params);
+        ]);
 
         return response()->json([
             'snap_token' => $snapToken,
-            'order_id' => $orderId,
-            'amount' => $request->amount
+            'order_id'   => $orderId,
         ]);
     }
 
-    public function callback(Request $request)
+    public function finalize(string $orderId)
     {
-        $serverKey = config('midtrans.server_key');
+        $sale = Sale::where('order_id', $orderId)
+            ->where('transaction_status', 'pending')
+            ->firstOrFail();
 
-        // Verify signature
-        $signature = hash(
-            'sha512',
-            $request->order_id .
-                $request->status_code .
-                $request->gross_amount .
-                $serverKey
-        );
+        return DB::transaction(function () use ($sale) {
 
-        if ($signature != $request->signature_key) {
-            return response()->json(['message' => 'Invalid signature'], 403);
+            $items = json_decode($sale->items_snapshot, true);
+
+            $totalAmount = 0;
+            $totalCost   = 0;
+
+            foreach ($items as $item) {
+
+                $product = Product::lockForUpdate()->findOrFail($item['product_id']);
+                $qty = $item['quantity'];
+
+                if ($product->stock < $qty) {
+                    abort(400, 'Stock not enough for ' . $product->name);
+                }
+
+                $subtotal     = $product->price * $qty;
+                $costSubtotal = $product->cost * $qty;
+                $profit       = $subtotal - $costSubtotal;
+
+                SaleItem::create([
+                    'sale_id'    => $sale->id,
+                    'product_id' => $product->id,
+                    'quantity'   => $qty,
+                    'price'      => $product->price,
+                    'cost'       => $product->cost,
+                    'subtotal'   => $subtotal,
+                    'profit'     => $profit,
+                ]);
+
+                $product->decrement('stock', $qty);
+
+                $totalAmount += $subtotal;
+                $totalCost   += $costSubtotal;
+            }
+
+            $sale->update([
+                'total_amount'       => $totalAmount,
+                'total_cost'         => $totalCost,
+                'profit'             => $totalAmount - $totalCost,
+                'transaction_status' => 'paid',
+            ]);
+
+            return response()->json(['message' => 'Transaction finalized']);
+        });
+    }
+
+
+
+    // STATUS CHECK 
+    public function checkStatus(string $orderId)
+    {
+        $status = (object) Transaction::status($orderId);
+
+        $sale = Sale::where('order_id', $orderId)->firstOrFail();
+
+        if (in_array($status->transaction_status, ['settlement', 'capture'])) {
+            $this->midtransService->processPaidTransaction($sale);
         }
 
-        // Cari sale berdasarkan order_id
-        $sale = Sale::where('order_id', $request->order_id)->first();
-
-        if (!$sale) {
-            return response()->json(['message' => 'Transaction not found'], 404);
-        }
-
-        // Update status transaksi berdasarkan response Midtrans
-        $sale->transaction_status = $request->transaction_status;
-        $sale->payment_type       = $request->payment_type;
-        $sale->fraud_status       = $request->fraud_status;
-        $sale->transaction_id     = $request->transaction_id;
-        $sale->transaction_time   = $request->transaction_time;
-        $sale->save();
-
-        return response()->json([
-            'message' => 'Callback processed',
-            'status'  => $request->transaction_status
-        ]);
+        return response()->json($status);
     }
 }
