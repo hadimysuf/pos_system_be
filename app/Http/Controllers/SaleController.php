@@ -118,27 +118,27 @@ class SaleController extends Controller
         ]);
     }
 
-    
-    // public function mySales(Request $request)
-    // {
-    //     $user = $request->user();
 
-    //     $query = Sale::with('items')
-    //         ->where('user_id', $user->id);
+    public function mySales(Request $request)
+    {
+        $user = $request->user();
 
-    //     if ($request->start_date && $request->end_date) {
-    //         $query->whereBetween('sale_date', [
-    //             $request->start_date,
-    //             $request->end_date
-    //         ]);
-    //     } else {
-    //         $query->whereDate('sale_date', today());
-    //     }
+        $query = Sale::with('items')
+            ->where('user_id', $user->id);
 
-    //     return SaleResource::collection(
-    //         $query->latest()->paginate(10)
-    //     );
-    // }
+        if ($request->start_date && $request->end_date) {
+            $query->whereBetween('sale_date', [
+                $request->start_date,
+                $request->end_date
+            ]);
+        } else {
+            $query->whereDate('sale_date', today());
+        }
+
+        return SaleResource::collection(
+            $query->latest()->paginate(10)
+        );
+    }
 
     /**
      * =========================
@@ -220,17 +220,14 @@ class SaleController extends Controller
     }
 
 
-    public function show(Request $request, Sale $sale)
+    public function show($id)
     {
-        // Cegah kasir lihat transaksi kasir lain
-        if ($sale->user_id !== $request->user()->id) {
-            return response()->json([
-                'message' => 'Unauthorized access to this transaction'
-            ], 403);
-        }
+        $sale = Sale::with(['items.product'])
+            ->where('user_id', auth()->id())
+            ->findOrFail($id);
 
-        return new SaleResource(
-            $sale->load(['items.product', 'cashier'])
-        );
+        return response()->json([
+            'data' => $sale
+        ]);
     }
 }
