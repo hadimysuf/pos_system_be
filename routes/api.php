@@ -96,10 +96,8 @@ Route::middleware('auth:sanctum')->group(function () {
     | MIDTRANS (LOGIN REQUIRED)
     |--------------------------------------------------------------------------
     */
-    Route::prefix('midtrans')->group(function () {
-        Route::post('/charge', [MidtransController::class, 'create']);
-        Route::post('/create', [MidtransController::class, 'createTransaction']);
-    });
+    Route::post('/midtrans/create', [MidtransController::class, 'create']);
+    Route::post('/midtrans/finalize/{orderId}', [MidtransController::class, 'finalize']);
 
     /*
     |--------------------------------------------------------------------------
@@ -115,13 +113,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [ReturnController::class, 'index']);
 
         // Detail return
-        Route::get('/{id}', [ReturnController::class, 'show']);
+        // Route::get('/{id}', [ReturnController::class, 'show']);
 
         // Admin approve return
         Route::post('/{id}/approve', [ReturnController::class, 'approve']);
 
         // Admin reject return
         Route::post('/{id}/reject', [ReturnController::class, 'reject']);
+        Route::get('/{id}', [ReturnController::class, 'detail']);
     });
 
     /*
